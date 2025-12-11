@@ -1,0 +1,453 @@
+-- YouLang: Design Your Own Tiny Language
+--
+-- Purpose
+--   This file is intentionally COMMENTS-ONLY. Use it to design your own
+--   tiny programming language: define its grammar and write a few tiny
+--   sample programs in that language (as comments). Do not add Haskell
+--   code here.
+--
+-- How to use this template
+--   - Replace placeholders with your ideas/specification.
+--   - Keep everything as comments (lines starting with `--`).
+--   - Keep examples small and clear.
+--
+-- Tips
+--   - Aim for 5–12 grammar rules to keep it manageable.
+--   - Prefer unambiguous grammar; specify precedence and associativity.
+--   - Include at least 2 sample programs that exercise different parts
+--     of your grammar (expressions, variables, control flow, etc.).
+--
+-------------------------------------------------------------------------------
+-- Ex1: Tokens and Literals  (ChaiLang)
+-------------------------------------------------------------------------------
+-- Basic idea:
+--   My language is called **ChaiLang**.
+--   It is a tiny, prefix, expression-only language inspired by Scheme.
+--
+-- Identifiers (id):
+--   - Pattern: letter (letter | digit | '_' )*
+--   - Case-sensitive.
+--   - Examples:  x, a1, total_sum, make-adder
+--
+-- Reserved words / special names:
+--   if, cond, else, lambda, let, list
+--   and, or, not
+--   print
+--   head, tail, empty?, cons
+--   #t, #f
+--
+-- Literals:
+--   - Integer: [0-9]+
+--       Examples: 0, 7, 123
+--   - Boolean:  #t  |  #f
+--   - String :  "..."   (double quotes, no embedded quote for now)
+--
+-- Operators (all used in prefix form inside parentheses):
+--   +   *   -   =   <   <=   >   >=
+--   and  or
+--
+-- Grouping / punctuation:
+--   (  )   -- every expression form is inside parentheses, except
+--          -- bare literals and identifiers.
+--
+-- Comments:
+--   - In THIS FILE: lines starting with "--" (Haskell comments).
+--   - In the *language itself*, I did not define a comment syntax
+
+
+
+-------------------------------------------------------------------------------
+-- Ex2: Grammar (BNF/EBNF-style)
+-------------------------------------------------------------------------------
+-- Specify the concrete syntax of your language using a small set of
+-- production rules. You can use BNF or EBNF; keep it consistent.
+--
+-- Example style (replace with your own):
+--   program   ::= { stmt }
+--   stmt      ::= 'let' ident '=' expr ';'
+--               | 'print' '(' expr ')' ';'
+--               | 'if' '(' expr ')' block [ 'else' block ]
+--               | 'while' '(' expr ')' block
+--   block     ::= '{' { stmt } '}'
+--   expr      ::= logic
+--   logic     ::= rel { ( '&&' | '||' ) rel }
+--   rel       ::= add { ( '==' | '!=' | '<' | '<=' | '>' | '>=' ) add }
+--   add       ::= mul { ( '+' | '-' ) mul }
+--   mul       ::= unary { ( '*' | '/' ) unary }
+--   unary     ::= [ '!' | '-' ] primary
+--   primary   ::= int | bool | ident | '(' expr ')' 
+--
+-- If you include functions:
+--   funDecl   ::= 'fun' ident '(' [ params ] ')' block
+--   params    ::= ident { ',' ident }
+--   call      ::= ident '(' [ args ] ')'
+--   args      ::= expr { ',' expr }
+--
+-- Replace the above with your actual rules. Keep them minimal but expressive.
+--
+
+-- I use prefix S-expressions, similar to Scheme. A program is a single expr.
+--
+-- program   ::= expr
+--
+-- expr      ::= literal
+--             | id
+--             | "(" operator expr expr ")"          -- built-in binary op
+--             | "(" "if"   expr expr expr ")"       -- (if cond then else)
+--             | "(" "cond" case* else-case ")"      -- multi-branch
+--             | "(" "lambda" "(" id* ")" expr ")"   -- anonymous function
+--             | "(" expr expr* ")"                  -- function application
+--             | "(" "let" "(" binding* ")" expr ")" -- local bindings
+--             | "(" "print" expr ")"                -- I/O: print value
+--             | "(" "list" expr* ")"                -- list literal
+--
+-- operator  ::= "+" | "*" | "-" | "=" | "<" | "<=" | ">=" | "and" | "or"
+--
+-- case      ::= "(" expr expr ")"          -- (condition result)
+-- else-case ::= "(" "else" expr ")"       -- default branch
+--
+-- binding   ::= "(" id expr ")"           -- (name value)
+--
+-- literal   ::= int | "#t" | "#f" | string
+-- int       ::= digit digit*
+-- digit     ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
+--
+-- string    ::= "\"" { any-char-except-quote } "\""
+--
+-- id        ::= as defined by the Parsing.hs identifier parser
+--
+-- Built-in list functions are called using normal function application
+--   (head xs)
+--   (tail xs)
+--   (empty? xs)
+--   (cons x xs)
+
+
+-------------------------------------------------------------------------------
+-- Ex3: Operator Precedence and Associativity
+-------------------------------------------------------------------------------
+-- List your operators from highest to lowest precedence and their
+-- associativity. This avoids ambiguity and drives your parser design.
+--
+-- Example (replace with yours):
+--   Highest ... Lowest
+--   1) Unary: !, -            (right-associative)
+--   2) Multiplicative: *, /   (left-associative)
+--   3) Additive: +, -         (left-associative)
+--   4) Relational: <, <=, >, >= (non-associative)
+--   5) Equality: ==, !=       (non-associative)
+--   6) Logical AND: &&        (left-associative)
+--   7) Logical OR:  ||        (left-associative)
+--
+
+
+-- ChaiLang uses *prefix* forms with explicit parentheses, so I do NOT
+-- rely on infix precedence or associativity. The tree structure is
+-- always clear from the parentheses.
+--
+-- Example:
+--   (+ 1 (* 2 3))   means 1 + (2 * 3)
+--   (* (+ 1 2) 3)   means (1 + 2) * 3
+--
+-- There is no "a + b * c" ambiguity because we never write infix.
+-- Everything is explicit:
+--   (+ a (* b c))   or   (* (+ a b) c)
+
+-------------------------------------------------------------------------------
+-- Ex4: Sample Programs (in YOUR language)
+-------------------------------------------------------------------------------
+-- Write 2–3 tiny programs that are valid according to your grammar.
+-- Show typical features: variables, expressions, conditionals/loops,
+-- function calls (if supported), etc. These are NOT Haskell; keep them
+-- as comments.
+--
+-- Program 1: expressions and let-bindings
+--   // Compute the area of a rectangle
+--   let w = 3;
+--   let h = 4;
+--   let area = w * h;
+--   print(area);
+--
+-- Program 2: conditionals
+--   let x = 5;
+--   if (x % 2 == 0) {
+--     print("even");
+--   } else {
+--     print("odd");
+--   }
+--
+-- Program 3: loop or function (optional)
+--   fun fact(n) {
+--     if (n <= 1) { return 1; }
+--     else { return n * fact(n - 1); }
+--   }
+--   print(fact(5));
+--
+
+-- Program 1: arithmetic + let
+--   (let ((a 10)
+--         (b (* a (+ 5 2))))
+--     b)
+-- Expected value: 70
+--
+-- Program 2: functions and lambdas
+--   (let ((square (lambda (x) (* x x)))
+--         (inc    (lambda (x) (+ x 1))))
+--     (square (inc 4)))
+-- Expected value: 25
+--
+-- Program 3: closures (make-adder)
+--   (let ((make-adder
+--           (lambda (k)
+--             (lambda (x) (+ x k)))))
+--     (let ((add3 (make-adder 3)))
+--       (add3 7)))
+-- Expected value: 10
+--
+-- Program 4: cond branching
+--   (cond
+--     ((< 2 1) 0)
+--     ((= 2 2) 5)
+--     (else 9))
+-- Expected value: 5
+--
+-- Program 5: strings and print (I/O)
+--   (print "hello, chai!")
+-- Expected value: StrV "hello, chai!"  (in GHCi)
+--
+-- Program 6: lists and list ops
+--   (let ((xs (list 1 2 3 4)))
+--     (head (tail xs)))
+-- Expected value: 2
+--
+-- Program 7: recursive "loop" that counts list length
+--   (let ((len
+--           (lambda (xs)
+--             (if (empty? xs)
+--                 0
+--                 (+ 1 (len (tail xs)))))))
+--     (len (list 10 20 30)))
+-- Expected value: 3
+
+
+-------------------------------------------------------------------------------
+-- Ex5: Abstract Syntax Tree (AST) Sketch
+-------------------------------------------------------------------------------
+-- Sketch the core AST node kinds your parser would produce. Just names
+-- and short notes are fine; no Haskell types here.
+--
+-- Example (replace with yours):
+--   Program      = [Stmt]
+--   Stmt         = Let(name, Expr)
+--                | If(Expr, Block, Maybe Block)
+--                | While(Expr, Block)
+--                | Print(Expr)
+--                | Return(Maybe Expr)
+--   Expr         = Var(name)
+--                | IntLit(n)
+--                | BoolLit(b)
+--                | BinOp(op, Expr, Expr)
+--                | UnOp(op, Expr)
+--                | Call(name, [Expr])
+--   Block        = [Stmt]
+--
+
+--
+-- Expr:
+--   NumE Int                     -- integer literal
+--   TrueE                        -- boolean true
+--   FalseE                       -- boolean false
+--   StrE String                  -- string literal
+--   ListE [Expr]                 -- list literal (list e1 e2 ...)
+--   Id   Identifier              -- variable name
+--   Op   Operator Expr Expr      -- built-in binary operator
+--   If   Expr Expr Expr          -- if condition then else
+--   FnDef [Identifier] Expr      -- lambda (params, body)
+--   FnApp Expr [Expr]            -- function application (f arg1 arg2 ...)
+--   Let  [(Identifier, Expr)] Expr -- local bindings then body
+--   Print Expr                   -- print expression
+--
+-- Operator:
+--   Plus | Mult | Equal | LessThan | ... (extended by sugar)
+--
+-- Value (runtime values):
+--   NumV Int
+--   BoolV Bool
+--   StrV String
+--   ListV [Value]
+--   FnV [Identifier] Expr Env    -- closure: params, body, and environment
+--
+-- Env (environment):
+--   list of (Identifier, Value) pairs, representing the current scope.
+
+
+
+-------------------------------------------------------------------------------
+-- Ex6: Static Semantics (Types) — optional
+-------------------------------------------------------------------------------
+-- If your language is typed, note the types and key rules.
+--
+-- Types:
+--   - Int, Bool, String, ...
+--
+-- Typing notes:
+--   - '+' expects (Int, Int) -> Int
+--   - '==' expects (T, T) -> Bool for comparable T
+--   - Assignment requires LHS variable type matches RHS expr type
+--
+
+
+-- ChaiLang is dynamically typed (like Python). There is no static type
+-- checker, but the interpreter follows these informal type rules and
+-- throws runtime errors when they are broken.
+--
+-- Informal types:
+--   Int      -- numbers
+--   Bool     -- booleans (#t, #f)
+--   String   -- text values
+--   List     -- lists of values
+--   Function -- closures created by lambda
+--
+-- Important typing rules:
+--   +, -, *           : Int × Int   → Int
+--   <, <=, >, >=      : Int × Int   → Bool
+--   =                 : Value × Value → Bool   (compares two values)
+--   and, or           : Bool × Bool → Bool
+--
+--   if / cond:
+--     - condition must be Bool
+--     - both branches should ideally produce the same "kind" of value
+--       (but this is not enforced statically).
+--
+--   list:
+--     - (list e1 e2 ...) produces a List of the evaluated values.
+--
+--   head, tail, empty?, cons:
+--     - expect List arguments; otherwise a runtime error is raised.
+--
+--   Functions:
+--     - (lambda (x y ...) body) creates a Function value.
+--     - applying a function with the wrong number of arguments results
+--       in an arity error at runtime.
+
+
+-------------------------------------------------------------------------------
+-- Ex7: Dynamic Semantics (Evaluation) — brief
+-------------------------------------------------------------------------------
+-- Describe what executing your programs means at a high level.
+--   - Variables live in an environment (map from name to value)
+--   - 'let x = e;' evaluates e, binds result to x in current scope
+--   - 'if (c) { ... } else { ... }' evaluates c; choose branch
+--   - Loops repeat while condition is true
+--   - Functions create call frames with parameters bound to arguments
+--
+
+-- Dynamic semantics of ChaiLang:
+--
+-- Environment:
+--   - An environment Env is a list of (name, value) pairs.
+--   - Lookup: when we see an Id x, we look x up in Env.
+--
+-- Literals:
+--   - NumE n    evaluates to NumV n.
+--   - TrueE     evaluates to BoolV True.
+--   - FalseE    evaluates to BoolV False.
+--   - StrE s    evaluates to StrV s.
+--   - ListE es  evaluates each expr in es and wraps them in ListV.
+--
+-- Operators:
+--   - (Op op e1 e2): evaluate e1 and e2 first, then apply opTable.
+--
+-- If:
+--   - (if c t e)
+--       1) evaluate c
+--       2) if result is BoolV True, evaluate t
+--       3) if result is BoolV False, evaluate e
+--       4) otherwise: runtime error "condition must be Bool".
+--
+-- Cond:
+--   - (cond (c1 v1) (c2 v2) ... (else v_else))
+--       evaluate c1, c2, ... in order.
+--       first condition that is BoolV True chooses its value.
+--       else-branch is used if no condition is true.
+--
+-- Lambda and application:
+--   - (lambda (x1 ... xn) body) evaluates to a closure FnV storing:
+--        params [x1..xn], the body, and the current environment.
+--   - (f arg1 ... argn)
+--        1) evaluate f to a value
+--        2) evaluate all arguments
+--        3) if f is a closure FnV:
+--             - create new environment extending the closure’s Env
+--               with (xi, argi) pairs
+--             - evaluate body in that new environment
+--           otherwise: error "trying to call a non-function value".
+--
+-- Let:
+--   - (let ((x1 e1) (x2 e2) ...) body)
+--       evaluate e1, extend Env with (x1, v1),
+--       evaluate e2 in that extended Env, extend with (x2, v2), ...
+--       finally evaluate body in the Env extended by all bindings.
+--       This makes earlier bindings visible in later ones.
+--
+-- Print:
+--   - (print e)
+--       evaluate e, conceptually "print" it,
+--       and return the value (so GHCi shows it).
+--
+-- Lists:
+--   - (list e1 e2 ...) → ListV [v1, v2, ...]
+--   - (head xs)        → first element of the list xs
+--   - (tail xs)        → list without the first element
+--   - (empty? xs)      → BoolV True if xs is empty, else BoolV False
+--   - (cons x xs)      → a new list with x prepended to xs
+
+
+-------------------------------------------------------------------------------
+-- Ex8: Edge Cases and Errors
+-------------------------------------------------------------------------------
+-- List 3–5 edge cases your parser/runtime should handle.
+--   - Unclosed parentheses or braces
+--   - Division by zero
+--   - Using an undefined variable
+--   - Type mismatches (e.g., true + 3)
+--   - Empty program or empty block
+--
+
+-- Edge cases in ChaiLang:
+-- Parser / syntax errors:
+--   - Missing closing parenthesis.
+--   - Unknown keyword or malformed S-expression.
+--
+-- Name errors:
+--   - Using an identifier that is not in the environment:
+--       "undefined identifier: x".
+--
+-- Function errors:
+--   - Calling a non-function value:
+--       "trying to call a non-function value".
+--   - Wrong number of arguments:
+--       "wrong number of arguments to function".
+--
+-- Type / value errors:
+--   - Using arithmetic operators on non-Ints:
+--       e.g., (+ #t 3).
+--   - Using comparison < on non-Ints.
+--   - Using head / tail / empty? / cons with non-List arguments.
+--   - head / tail on an empty list.
+--
+-- Conditional errors:
+--   - if / cond condition evaluates to something that is not BoolV
+--       → "condition must be Bool".
+--
+-------------------------------------------------------------------------------
+-- Submission Checklist
+-------------------------------------------------------------------------------
+-- [ ] Ex1 filled: Tokens/literals/reserved words
+-- [ ] Ex2 filled: Grammar rules (BNF/EBNF)
+-- [ ] Ex3 filled: Precedence/associativity
+-- [ ] Ex4 filled: 2–3 sample programs
+-- [ ] Ex5 filled: AST sketch
+-- [ ] Ex6/7/8: Notes on types/semantics/edge cases
+--
+-- Keep this file comments-only. Do not add any Haskell code here.
